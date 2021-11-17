@@ -16,3 +16,22 @@ read in the data
 
 The raw data consists of a case id, reported date of the case, the last name and the first name of the victim, the race, age and gender of the victim, the city and lagitude, longitude the homicide was committed and the disposition.
 
+```{r}
+homicide_df = 
+  read_csv("./data/homicide-data.csv") %>%
+  janitor::clean_names() %>% 
+  mutate(
+    city_state = str_c(city, state, sep = ","),
+    resolved = case_when(
+      disposition == "Closed without arrest" ~ "unsolved",
+      disposition == "Open/No arrest" ~ "unsolved",
+      disposition == "Closed by arrest" ~ "solved"
+    )
+  ) %>% 
+  group_by(city_state) %>% 
+  summarize(
+    hom_total = n(),
+    hom_unsolved = sum(resolved == "unsolved")
+  )
+```
+
