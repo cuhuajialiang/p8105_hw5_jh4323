@@ -7,7 +7,7 @@ output: github_document
 
 ```{r setup, message = FALSE}
 library(tidyverse)
-
+library(purrr)
 ```
 
 ## Problem 1
@@ -27,11 +27,37 @@ homicide_df =
       disposition == "Open/No arrest" ~ "unsolved",
       disposition == "Closed by arrest" ~ "solved"
     )
-  ) %>% 
+  )
+
+homicount_df =
+  homicide_df %>% 
   group_by(city_state) %>% 
   summarize(
     hom_total = n(),
     hom_unsolved = sum(resolved == "unsolved")
   )
+```
+
+Let's do a prop.test for Baltimore
+
+```{r}
+prop.test(
+  homicount_df %>% filter(city_state == "Baltimore,MD") %>% pull(hom_unsolved),
+  homicount_df %>% filter(city_state == "Baltimore,MD") %>% pull(hom_total)) %>%
+  broom::tidy()
+```
+
+iterate through the cities...
+
+```{r}
+result_df = 
+  homicount_df %>% 
+   mutate(
+     prop_tests = map2(.x = hom_unsolved, .y = hom_total, ~prop.test(x = .x, n =.y)),
+     tidy_tests = map(.x = prop_tests, ~broom::tidy(.x))
+   ) %>% 
+  select(-prop_tests) %>% 
+  unnest(tidy_tests) %>% 
+  select(city_state, estimate, conf.low, conf.high)
 ```
 
