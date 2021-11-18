@@ -5,7 +5,7 @@ date: "11/16/2021"
 output: github_document
 ---
 
-```{r setup, message = FALSE}
+```{r setup, echo = FALSE, message = FALSE}
 library(tidyverse)
 library(purrr)
 
@@ -26,31 +26,37 @@ scale_colour_discrete = scale_colour_viridis_d
 scale_fill_discrete = scale_fill_viridis_d
 ```
 
+
 ## Problem 1
 
 read in the data
 
-The raw data consists of a case id, reported date of the case, the last name and the first name of the victim, the race, age and gender of the victim, the city and lagitude, longitude the homicide was committed and the disposition.
-
-```{r}
+```{r message = FALSE}
 homicide_df = 
-  read_csv("./data/homicide-data.csv") %>%
-  janitor::clean_names() %>% 
+  read_csv("./data/homicide-data.csv", na = c("", "Unknown")) %>%
   mutate(
     city_state = str_c(city, state, sep = ","),
-    resolved = case_when(
+    resolution = case_when(
       disposition == "Closed without arrest" ~ "unsolved",
       disposition == "Open/No arrest" ~ "unsolved",
       disposition == "Closed by arrest" ~ "solved"
     )
-  )
+  ) %>% 
+  relocate(city_state) %>%
+  filter(city_state != "Tulsa,AL")
+```
 
+The raw data consists of a case id, reported date of the case, the last name and the first name of the victim, the race, age and gender of the victim, the city and latitude, longitude the homicide was committed and the disposition.
+
+Let's focus on Baltimore!
+
+```{r}
 homicount_df =
   homicide_df %>% 
   group_by(city_state) %>% 
   summarize(
     hom_total = n(),
-    hom_unsolved = sum(resolved == "unsolved")
+    hom_unsolved = sum(resolution == "unsolved")
   )
 ```
 
@@ -63,7 +69,7 @@ prop.test(
   broom::tidy()
 ```
 
-iterate through the cities...
+iterate across the cities...
 
 ```{r}
 result_df = 
@@ -85,7 +91,7 @@ result_df %>%
   ggplot(aes(x = city_state, y = estimate)) +
   geom_point() +
   geom_errorbar(aes(ymin = conf.low, ymax = conf.high)) +
-  theme(axis.text.x = element_text(angle = -90, vjust = 0.5, hjust = 1))
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
 ```
 
 ## Problem 2
